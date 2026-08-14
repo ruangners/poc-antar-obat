@@ -1,4 +1,4 @@
-import { AppsScriptBridgeTransport, PocApi } from './api-client.js';
+import { AppsScriptFormTransport, PocApi } from './api-client.js';
 
 const $ = (id) => document.getElementById(id);
 const state = { transport:null, api:null, token:sessionStorage.getItem('poc_session_token') || '' };
@@ -12,6 +12,7 @@ function setBridgeState({ready, message}) {
   $('bridgeDot').className = `dot ${ready ? 'ok' : ''}`;
   $('bridgeText').textContent = message;
   document.querySelectorAll('[data-needs-bridge]').forEach(b => b.disabled = !ready);
+  updateSessionUi();
 }
 
 function updateSessionUi() {
@@ -34,15 +35,17 @@ function saveEndpoint() {
   return url;
 }
 
-function connect() {
+async function connect() {
   try {
     const endpoint = saveEndpoint();
-    state.transport = new AppsScriptBridgeTransport({ endpoint, onState:setBridgeState });
+    state.transport = new AppsScriptFormTransport({ endpoint, onState:setBridgeState });
     state.api = new PocApi(state.transport);
-    state.transport.connect();
+    const result = await state.transport.connect();
+    log('CONNECT ✓', {endpoint, frontendOrigin:location.origin, result});
     updateSessionUi();
-    log('CONNECT', {endpoint, frontendOrigin:location.origin});
-  } catch (e) { alert(e.message); }
+  } catch (e) {
+    log('CONNECT ✗', e.message);
+  }
 }
 
 async function run(name, fn) {

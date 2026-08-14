@@ -1,9 +1,20 @@
-export class AppsScriptBridgeTransport {
+function trustedAppsScriptMessageOrigin(origin) {
+  try {
+    const u = new URL(origin);
+    if (u.protocol !== 'https:') return false;
+    return u.hostname === 'script.google.com' ||
+      u.hostname === 'script.googleusercontent.com' ||
+      u.hostname.endsWith('.googleusercontent.com');
+  } catch (_) {
+    return false;
+  }
+}
+
+export class AppsScriptFormTransport {
   constructor({ endpoint, timeoutMs = 20000, onState = () => {} }) {
     this.endpoint = endpoint;
     this.timeoutMs = timeoutMs;
     this.onState = onState;
-    this.frame = null;
     this.ready = false;
     this.pending = new Map();
     this.nonce = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -11,56 +22,92 @@ export class AppsScriptBridgeTransport {
     window.addEventListener('message', this.boundMessage);
   }
 
-  connect() {
-    this.destroyFrame();
+  async connect() {
     this.ready = false;
-    this.onState({ ready:false, message:'Menghubungkan bridge...' });
-    const frame = document.createElement('iframe');
-    frame.id = 'bridgeFrame';
-    frame.title = 'Apps Script Bridge';
-    frame.src = this.endpoint;
-    document.body.appendChild(frame);
-    this.frame = frame;
-  }
-
-  destroyFrame() {
-    if (this.frame) this.frame.remove();
-    this.frame = null;
+    this.onState({ ready:false, message:'Menguji koneksi backend...' });
+    try {
+      const result = await this.call('ping');
+      this.ready = true;
+      const version = result?.data?.version || '';
+      this.onState({ ready:true, message:`Backend siap • ${version}` });
+      return result;
+    } catch (error) {
+      this.ready = false;
+      this.onState({ ready:false, message:`Gagal terhubung • ${error.message}` });
+      throw error;
+    }
   }
 
   handleMessage(event) {
-    if (!this.frame || event.source !== this.frame.contentWindow) return;
     const msg = event.data || {};
-    if (msg.type === 'POC_BRIDGE_READY') {
-      this.ready = true;
-      this.onState({ ready:true, message:`Bridge siap • ${msg.version || ''}` });
-      return;
-    }
-    if (msg.type !== 'POC_RPC_RESPONSE' || msg.nonce !== this.nonce) return;
+    if (msg.type !== 'POC_RPC_RESPONSE' || msg.nonce !== this.nonce || !msg.id) return;
     const pending = this.pending.get(msg.id);
     if (!pending) return;
+
+    // Apps Script HtmlService dijalankan di sandbox iframe pada domain Google.
+    // Sumber pesan dapat berasal dari frame internal, jadi validasi memakai domain Google + nonce/id.
+    if (!trustedAppsScriptMessageOrigin(event.origin)) {
+      clearTimeout(pending.timer);
+      this.pending.delete(msg.id);
+      pending.cleanup();
+      pending.reject(new Error(`Origin respons tidak dipercaya: ${event.origin || '(kosong)'}`));
+      return;
+    }
+
     clearTimeout(pending.timer);
     this.pending.delete(msg.id);
+    pending.cleanup();
     if (msg.ok) pending.resolve(msg.result);
-    else pending.reject(new Error(msg.error?.message || 'Bridge error'));
+    else pending.reject(new Error(msg.error?.message || 'Apps Script transport error'));
   }
 
   call(method, ...args) {
-    if (!this.ready || !this.frame?.contentWindow) return Promise.reject(new Error('Bridge belum siap.'));
     const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    const frameName = `poc_rpc_${id.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+
     return new Promise((resolve, reject) => {
+      const frame = document.createElement('iframe');
+      frame.name = frameName;
+      frame.title = 'Apps Script RPC';
+      frame.style.display = 'none';
+      frame.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(frame);
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = this.endpoint;
+      form.target = frameName;
+      form.acceptCharset = 'UTF-8';
+      form.style.display = 'none';
+
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'rpc';
+      input.value = JSON.stringify({
+        type: 'POC_RPC_REQUEST',
+        id,
+        nonce: this.nonce,
+        method,
+        args,
+        origin: location.origin
+      });
+      form.appendChild(input);
+      document.body.appendChild(form);
+
+      const cleanup = () => {
+        try { form.remove(); } catch (_) {}
+        try { frame.remove(); } catch (_) {}
+      };
+
       const timer = setTimeout(() => {
         this.pending.delete(id);
+        cleanup();
         reject(new Error(`Timeout ${this.timeoutMs/1000} detik saat memanggil ${method}.`));
       }, this.timeoutMs);
-      this.pending.set(id, { resolve, reject, timer });
-      this.frame.contentWindow.postMessage({
-        type:'POC_RPC_REQUEST',
-        id,
-        nonce:this.nonce,
-        method,
-        args
-      }, '*');
+
+      this.pending.set(id, { resolve, reject, timer, cleanup });
+      form.submit();
+      setTimeout(() => { try { form.remove(); } catch (_) {} }, 0);
     });
   }
 }

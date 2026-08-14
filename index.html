@@ -14,7 +14,7 @@
     <section class="hero">
       <div class="eyebrow">Tahap 0 • Proof of Concept</div>
       <h1>GitHub Pages ↔ Apps Script ↔ Google Sheets</h1>
-      <p>Mini-app ini hanya menguji jembatan teknis yang nanti dipakai Produksi V1. Frontend tidak mengenal struktur Sheet; ia hanya memanggil kontrak API melalui hidden Apps Script bridge.</p>
+      <p>Mini-app ini hanya menguji jembatan teknis yang nanti dipakai Produksi V1. Frontend tidak mengenal struktur Sheet; ia hanya memanggil kontrak API melalui transport POST tersembunyi ke Apps Script.</p>
     </section>
 
     <div class="notice">⚠ HANYA DATA DUMMY. Backend POC sengaja menolak RM yang tidak diawali <strong>RM-DEMO-</strong> dan nama yang tidak mengandung DUMMY/DEMO/UJI.</div>
@@ -24,14 +24,14 @@
         <h2>1. Hubungkan Backend</h2>
         <p class="sub">Tempel URL deployment Apps Script <strong>/exec</strong>. URL disimpan hanya di browser ini.</p>
         <div class="field"><label>Apps Script Web App URL</label><input id="endpoint" placeholder="https://script.google.com/macros/s/.../exec"></div>
-        <div class="actions"><button class="primary" onclick="poc.connect()">Hubungkan Bridge</button></div>
+        <div class="actions"><button class="primary" onclick="poc.connect()">Hubungkan Backend</button></div>
         <div class="status-row" style="margin-top:14px"><span id="bridgeDot" class="dot"></span><strong id="bridgeText">Belum terhubung</strong></div>
         <p class="tiny">Frontend origin saat ini: <span id="frontendOrigin" class="origin"></span>. Origin ini harus ada di <code>POC_ALLOWED_ORIGINS</code> pada <code>Config.gs</code>.</p>
       </div>
 
       <div class="card">
         <h2>2. Tes Backend & Sesi</h2>
-        <p class="sub">Ping membuktikan Apps Script hidup. Sesi demo membuktikan token dapat melewati GitHub → bridge → Apps Script.</p>
+        <p class="sub">Ping membuktikan Apps Script hidup. Sesi demo membuktikan token dapat melewati GitHub → Apps Script tanpa fetch/CORS.</p>
         <div class="status-row"><span id="pingBadge" class="badge">BELUM DIUJI</span><span id="sessionBadge" class="badge warn">BELUM ADA SESI</span></div>
         <div class="actions">
           <button class="secondary" data-needs-bridge disabled onclick="poc.ping()">Ping Backend</button>
@@ -71,7 +71,7 @@
       </div>
       <div class="card">
         <h2>Kriteria Lulus Tahap 0</h2>
-        <p class="tiny">Bridge siap ✓ • Ping ✓ • Sesi ✓ • Tulis dummy ✓ • Baca kembali ✓ • Error tertangkap ✓ • Dicoba Chrome/Edge dan HP melalui GitHub Pages.</p>
+        <p class="tiny">Backend siap ✓ • Ping ✓ • Sesi ✓ • Tulis dummy ✓ • Baca kembali ✓ • Error tertangkap ✓ • Dicoba Chrome/Edge dan HP melalui GitHub Pages.</p>
       </div>
     </section>
 
