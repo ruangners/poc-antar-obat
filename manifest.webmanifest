@@ -1,0 +1,13 @@
+{
+  "name": "POC Pengantaran Obat Gratis",
+  "short_name": "POC Antar Obat",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F8FA",
+  "theme_color": "#006A78",
+  "description": "Tahap 0 proof of concept GitHub Pages dan Apps Script bridge.",
+  "icons": [
+    {"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}

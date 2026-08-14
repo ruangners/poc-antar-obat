@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#006A78">
+  <title>Tahap 0 POC • Pengantaran Obat</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div class="eyebrow">Tahap 0 • Proof of Concept</div>
+      <h1>GitHub Pages ↔ Apps Script ↔ Google Sheets</h1>
+      <p>Mini-app ini hanya menguji jembatan teknis yang nanti dipakai Produksi V1. Frontend tidak mengenal struktur Sheet; ia hanya memanggil kontrak API melalui hidden Apps Script bridge.</p>
+    </section>
+
+    <div class="notice">⚠ HANYA DATA DUMMY. Backend POC sengaja menolak RM yang tidak diawali <strong>RM-DEMO-</strong> dan nama yang tidak mengandung DUMMY/DEMO/UJI.</div>
+
+    <section class="section grid two">
+      <div class="card">
+        <h2>1. Hubungkan Backend</h2>
+        <p class="sub">Tempel URL deployment Apps Script <strong>/exec</strong>. URL disimpan hanya di browser ini.</p>
+        <div class="field"><label>Apps Script Web App URL</label><input id="endpoint" placeholder="https://script.google.com/macros/s/.../exec"></div>
+        <div class="actions"><button class="primary" onclick="poc.connect()">Hubungkan Bridge</button></div>
+        <div class="status-row" style="margin-top:14px"><span id="bridgeDot" class="dot"></span><strong id="bridgeText">Belum terhubung</strong></div>
+        <p class="tiny">Frontend origin saat ini: <span id="frontendOrigin" class="origin"></span>. Origin ini harus ada di <code>POC_ALLOWED_ORIGINS</code> pada <code>Config.gs</code>.</p>
+      </div>
+
+      <div class="card">
+        <h2>2. Tes Backend & Sesi</h2>
+        <p class="sub">Ping membuktikan Apps Script hidup. Sesi demo membuktikan token dapat melewati GitHub → bridge → Apps Script.</p>
+        <div class="status-row"><span id="pingBadge" class="badge">BELUM DIUJI</span><span id="sessionBadge" class="badge warn">BELUM ADA SESI</span></div>
+        <div class="actions">
+          <button class="secondary" data-needs-bridge disabled onclick="poc.ping()">Ping Backend</button>
+          <button class="primary" data-needs-bridge disabled onclick="poc.createSession()">Buat Sesi Demo</button>
+        </div>
+        <p id="pingResult" class="tiny">—</p>
+      </div>
+    </section>
+
+    <section class="section card">
+      <div class="status-row"><h2 style="margin-right:auto">3. Tes Tulis Dummy</h2><span id="writeBadge" class="badge">BELUM DIUJI</span></div>
+      <p class="sub">Tidak ada nomor telepon, alamat, atau data pasien asli pada POC ini.</p>
+      <div class="grid two">
+        <div class="field"><label>No. RM Dummy</label><input id="rmDemo" value="RM-DEMO-001"></div>
+        <div class="field"><label>Nama Dummy</label><input id="namaDemo" value="PASIEN DUMMY 001"></div>
+        <div class="field"><label>Status</label><select id="statusDemo"><option>TEST</option><option>MENUNGGU DIPROSES</option><option>SIAP DIANTAR</option><option>DALAM PERJALANAN</option><option>TERKIRIM</option><option>GAGAL ANTAR</option></select></div>
+        <div class="field"><label>Catatan</label><input id="noteDemo" value="Uji tulis dari GitHub Pages"></div>
+      </div>
+      <div class="actions"><button class="primary" data-needs-session disabled onclick="poc.writeDummy()">Tulis ke TEST_API</button></div>
+    </section>
+
+    <section class="section card">
+      <div class="status-row"><h2 style="margin-right:auto">4. Tes Baca Kembali</h2><span id="readBadge" class="badge">BELUM DIUJI</span></div>
+      <p class="sub">Membaca maksimal 10 baris terakhir melalui kontrak API—bukan akses Sheet langsung dari GitHub.</p>
+      <div class="actions">
+        <button class="secondary" data-needs-session disabled onclick="poc.readRows()">Baca 10 Baris</button>
+        <button class="danger" data-needs-session disabled onclick="poc.resetRows()">Bersihkan Data Dummy</button>
+      </div>
+      <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Waktu</th><th>RM</th><th>Nama</th><th>Status</th><th>Catatan</th></tr></thead><tbody id="rowsBody"><tr><td colspan="5" class="tiny">Belum ada data.</td></tr></tbody></table></div>
+    </section>
+
+    <section class="section grid two">
+      <div class="card">
+        <div class="status-row"><h2 style="margin-right:auto">5. Tes Error</h2><span id="errorBadge" class="badge">BELUM DIUJI</span></div>
+        <p class="sub">Backend sengaja melempar error. Frontend harus menangkap pesan tanpa hang atau reload.</p>
+        <button class="secondary" data-needs-session disabled onclick="poc.forceError()">Picu Error Uji</button>
+      </div>
+      <div class="card">
+        <h2>Kriteria Lulus Tahap 0</h2>
+        <p class="tiny">Bridge siap ✓ • Ping ✓ • Sesi ✓ • Tulis dummy ✓ • Baca kembali ✓ • Error tertangkap ✓ • Dicoba Chrome/Edge dan HP melalui GitHub Pages.</p>
+      </div>
+    </section>
+
+    <section class="section card">
+      <h2>Log Teknis</h2>
+      <p class="sub">Salin log ini bila ada error agar diagnosis cepat.</p>
+      <pre id="log">Belum ada aktivitas.</pre>
+    </section>
+
+    <footer>Pengantaran Obat Gratis • RSUD Provinsi Nusa Tenggara Barat • Tahap 0 POC • Dummy only</footer>
+  </main>
+  <script type="module" src="./assets/app.js"></script>
+</body>
+</html>
